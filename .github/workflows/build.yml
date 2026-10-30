@@ -26,7 +26,7 @@ jobs:
         run: npm install -g pake-cli
 
       - name: Build App with Pake
-        run: pake https://example.com --name MyApp
+        run: pake https://room.lfn.moe --name UniSound
 
       # 核心修复：把 Pake 生成的 exe/msi 复制到当前工作目录，方便统一收集
       - name: Copy build artifacts to workspace
