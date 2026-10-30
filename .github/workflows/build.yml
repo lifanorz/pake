@@ -35,18 +35,23 @@ jobs:
       - name: Build App with Pake
         run: pake https://example.com --name MyApp
 
-      # 6. 将打包好的 .exe 上传为 Artifact（可在 Actions 页面直接下载测试）
+      # 6. 打印当前目录下的所有文件（用于排查如果还有问题时定位文件位置）
+      - name: List files for debugging
+        run: Get-ChildItem -Recurse
+        shell: pwsh
+
+      # 7. 使用递归路径查找并上传所有生成的 .exe 文件
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-app-exe
-          path: '*.exe'
+          path: '**/*.exe'
 
-      # 7. 如果是 Tag 触发，自动把 .exe 发布到 Releases 页面
+      # 8. 如果是 Tag 触发，自动把 .exe 发布到 Releases 页面
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: '*.exe'
+          files: '**/*.exe'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
