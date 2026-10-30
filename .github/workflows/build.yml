@@ -1,57 +1,57 @@
 name: Pake Build Windows EXE
 
-# 触发条件：当你打 Tag 推送（比如 v1.0.0）或在 GitHub 上手动点击运行
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch: # 支持在 GitHub 页面手动点击触发
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # 1. 拉取仓库代码
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. 安装 Node.js 环境
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # 3. 安装 Rust 环境（Pake 底层依赖）
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # 4. 全局安装 Pake CLI
       - name: Install Pake CLI
         run: npm install -g pake-cli
 
-      # 5. 执行 Pake 打包命令
-      # 💡 提示：请将下面的 https://example.com 替换为你的目标网址，将 MyApp 替换为你的软件名
       - name: Build App with Pake
         run: pake https://example.com --name MyApp
 
-      # 6. 打印当前目录下的所有文件（用于排查如果还有问题时定位文件位置）
-      - name: List files for debugging
-        run: Get-ChildItem -Recurse
+      # 核心修复：把 Pake 生成的 exe/msi 复制到当前工作目录，方便统一收集
+      - name: Copy build artifacts to workspace
+        run: |
+          $npmPath = npm config get prefix
+          Write-Host "Searching in $npmPath"
+          Get-ChildItem -Path "$npmPath" -Recurse -Include *.exe, *.msi | Copy-Item -Destination "." -Force
+          Get-ChildItem -Recurse
         shell: pwsh
 
-      # 7. 使用递归路径查找并上传所有生成的 .exe 文件
+      # 上传所有生成的安装包和 exe
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-app-exe
-          path: '**/*.exe'
+          name: windows-app-packages
+          path: |
+            *.exe
+            *.msi
 
-      # 8. 如果是 Tag 触发，自动把 .exe 发布到 Releases 页面
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: '**/*.exe'
+          files: |
+            *.exe
+            *.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
